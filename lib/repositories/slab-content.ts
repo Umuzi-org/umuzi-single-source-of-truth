@@ -127,3 +127,17 @@ export async function bulkInsertSlabContent(
 
   return result.rowCount ?? 0;
 }
+
+// Delete all slab content (useful before a full re-ingest)
+export async function clearAllSlabContent(): Promise<number> {
+  const result = await query("DELETE FROM slab_content");
+  return result.rowCount ?? 0;
+}
+
+// Count total slab content records
+export async function countSlabContent(): Promise<number> {
+  const result = await query<{ count: string }>(
+    "SELECT COUNT(*) as count FROM slab_content",
+  );
+  return parseInt(result.rows[0].count, 10);
+}
