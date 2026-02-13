@@ -95,3 +95,35 @@ export async function deleteSlabContent(id: number): Promise<boolean> {
 
   return (result.rowCount ?? 0) > 0;
 }
+
+// Bulk insert many content records in a single transaction
+export async function bulkInsertSlabContent(
+  records: CreateSlabContent[],
+): Promise<number> {
+  if (records.length === 0) return 0;
+
+  // Build a parameterised bulk INSERT
+  const values: unknown[] = [];
+  const placeholders: string[] = [];
+
+  records.forEach((r, idx) => {
+    const offset = idx * 4;
+    placeholders.push(
+      `($${offset + 1}, $${offset + 2}, $${offset + 3}::vector, $${offset + 4})`,
+    );
+    values.push(
+      r.title,
+      r.chunk_text,
+      r.embedding_vector ? `[${r.embedding_vector.join(",")}]` : null,
+      r.slab_url ?? null,
+    );
+  });
+
+  const result = await query(
+    `INSERT INTO slab_content (title, chunk_text, embedding_vector, slab_url)
+     VALUES ${placeholders.join(", ")}`,
+    values,
+  );
+
+  return result.rowCount ?? 0;
+}
