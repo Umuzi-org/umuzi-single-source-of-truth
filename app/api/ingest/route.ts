@@ -11,7 +11,14 @@ import type { CreateSlabContent } from "../../../lib/db-types";
 // POST /api/ingest — Reads markdown files, chunks them, and stores in DB.
 // WARNING: Clears existing content first (full re-ingest).
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (req.headers.get("x-ingest-secret") !== process.env.INGEST_SECRET_CODE) {
+    return NextResponse.json(
+      { error: "Unauthorized: Invalid secret code" },
+      { status: 401 },
+    );
+  }
+
   try {
     const docs = loadAllDocuments();
 
