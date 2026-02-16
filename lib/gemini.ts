@@ -13,7 +13,7 @@ export const genai = new GoogleGenAI({ apiKey });
 
 // Centralized model names for easy maintenance and consistency across the codebase.
 // Embedding model used for vectorizing text chunks.
-export const EMBEDDING_MODEL = "text-embedding-004";
+export const EMBEDDING_MODEL = "gemini-embedding-001";
 
 // Chat model used for any LLM interactions
 export const CHAT_MODEL = "gemini-2.0-flash";
@@ -23,6 +23,7 @@ export async function embedText(text: string): Promise<number[]> {
   const response = await genai.models.embedContent({
     model: EMBEDDING_MODEL,
     contents: text,
+    config: { outputDimensionality: 768 },
   });
 
   const embedding = response.embeddings?.[0]?.values;
@@ -39,6 +40,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
   const response = await genai.models.embedContent({
     model: EMBEDDING_MODEL,
     contents: texts,
+    config: { outputDimensionality: 768 },
   });
 
   const embeddings = response.embeddings;

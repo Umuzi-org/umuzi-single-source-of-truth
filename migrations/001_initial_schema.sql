@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS slab_content (
     id SERIAL PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
     chunk_text TEXT NOT NULL,
-    embedding_vector vector(768),  -- Gemini embeddings are 768 dimensions
+    embedding_vector vector(768),  -- gemini-embedding-001 with outputDimensionality=768
     slab_url VARCHAR(1000),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
