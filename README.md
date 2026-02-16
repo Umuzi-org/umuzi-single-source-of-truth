@@ -1,36 +1,190 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Umuzi Single Source of Truth
+
+An AI-powered internal knowledge assistant for the Umuzi organisation. It ingests operational documentation (currently from local Markdown files, with Slab integration planned), chunks it intelligently, generates vector embeddings via Google Gemini, and exposes a RAG (Retrieval-Augmented Generation) pipeline so staff can ask natural-language questions and receive accurate, cited answers through a Slack bot.
+
+## Goals
+
+1. **Centralise institutional knowledge** — surface information from Slab docs, operational processes, and team guidelines in one searchable system.
+2. **Instant, accurate answers** — staff ask a question in Slack and get an LLM-generated response grounded in real Umuzi documents, complete with citations and links.
+3. **Stay up-to-date automatically** — a daily cron job re-ingests content and refreshes embeddings so answers always reflect the latest docs.
+4. **Track usage** — every question is logged for analytics, helping the team understand what information people look for most.
+
+## What "DONE" Looks Like
+
+| Capability                                   | Status                                     |
+| -------------------------------------------- | ------------------------------------------ |
+| Slab / Markdown content fetch and storage    | ✅ Working (local Markdown; Slab API next) |
+| Content chunking (500–1 000 tokens, overlap) | ✅ Working & tested                        |
+| PostgreSQL + pgvector schema                 | ✅ Migrated                                |
+| Ingestion API route (`POST /api/ingest`)     | ✅ Working (secret-key secured)            |
+| Google Gemini embedding generation           | 🔲 Not started                             |
+| Vector similarity search (RAG retrieval)     | ✅ Repository ready, awaiting embeddings   |
+| LLM answer generation with citations         | 🔲 Not started                             |
+| Slack App integration (slash command / DM)   | 🔲 Not started                             |
+| Question logging (`questions_asked` table)   | ✅ Repository ready                        |
+| Daily cron job (Render)                      | 🔲 Not started                             |
+| Production deployment on Render              | 🔲 Not started                             |
+
+## How It Will Be Used at Umuzi
+
+Umuzi has a growing body of operational documentation including meeting guidelines, OKR processes, KPA frameworks, deep-work policies, quarterly rituals, and more. Today, finding the right document means searching Slab manually or asking a colleague. This tool replaces that friction:
+
+- **Staff** type a question in a Slack channel or DM the bot (e.g. _"What is the process for setting KPAs?"_).
+- The system converts the question into an embedding, searches the vector database for the most relevant document chunks, and feeds them into Google Gemini to produce a concise answer **with citations** (quotes + source links).
+- **Ops & Leadership** can review the `questions_asked` table to see what topics people ask about most, identifying documentation gaps.
+
+## Current Project Status
+
+The project is in **early build phase** (≈ Day 4–5 of 12):
+
+- **Next.js 16 + TypeScript** project is bootstrapped and compiling.
+- **Database layer** is complete — PostgreSQL with pgvector, connection pooling via `pg`, typed repositories for `slab_content` and `questions_asked`, and a migration script.
+- **Content ingestion pipeline** is functional end-to-end: the `content-reader` recursively loads Markdown files from `content/`, the `chunker` splits them into overlapping ~550-word chunks (≈ 730 tokens) with title context prepended, and the `POST /api/ingest` route orchestrates clear → chunk → bulk-insert in batches of 50.
+- **25 operational Markdown documents** are already in `content/operational-processes/`.
+- **Embeddings, RAG query handling, Slack integration, and deployment** are next.
+
+## Tech Stack
+
+| Layer            | Technology              |
+| ---------------- | ----------------------- |
+| Framework        | Next.js 16 (App Router) |
+| Language         | TypeScript 5            |
+| Database         | PostgreSQL + pgvector   |
+| DB Client        | `pg` (node-postgres)    |
+| Embeddings / LLM | Google Gemini (planned) |
+| Chat Interface   | Slack App (planned)     |
+| Hosting          | Render (planned)        |
+| Styling          | Tailwind CSS 4          |
+
+## Database Schema
+
+```
+slab_content
+├── id              SERIAL PRIMARY KEY
+├── title           VARCHAR(500)
+├── chunk_text      TEXT
+├── embedding_vector vector(768)   — Gemini embedding dimensions
+├── slab_url        VARCHAR(1000)
+└── created_at      TIMESTAMPTZ
+
+questions_asked
+├── id              SERIAL PRIMARY KEY
+├── user_id         VARCHAR(255)
+├── question_text   TEXT
+└── timestamp       TIMESTAMPTZ
+```
+
+Indexes: HNSW on `embedding_vector` (cosine), B-tree on `user_id` and `timestamp`.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **PostgreSQL** ≥ 15 with the **pgvector** extension installed
+- A Google Gemini API key (for embeddings & LLM — needed once that integration is built)
+
+### 1. Clone & install
+
+```bash
+git clone https://github.com/<your-org>/umuzi-single-source-of-truth.git
+cd umuzi-single-source-of-truth
+npm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env.local` file in the project root:
+
+```env
+# PostgreSQL connection string (pgvector must be enabled on this database)
+DATABASE_URL=postgresql://<user>:<password>@<host>:5432/<dbname>
+
+# Secret used to authenticate the /api/ingest endpoint
+INGEST_SECRET_CODE=your-random-secret
+
+# Base URL of the running app (used by scripts/ingest.ts)
+HOST_URL=http://localhost:3000
+
+# Google Gemini API key (required once embedding generation is implemented)
+GEMINI_API_KEY=
+
+# Slack Bot OAuth token (required once Slack integration is implemented)
+SLACK_BOT_TOKEN=
+```
+
+### 3. Run database migrations
+
+```bash
+psql $DATABASE_URL -f migrations/001_initial_schema.sql
+```
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. Ingest content
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+With the dev server running, trigger ingestion:
 
-## Learn More
+```bash
+# Via the helper script (requires HOST_URL and INGEST_SECRET_CODE in env)
+npm run ingest
 
-To learn more about Next.js, take a look at the following resources:
+# Or directly via curl
+curl -X POST http://localhost:3000/api/ingest \
+  -H "x-ingest-secret: your-random-secret"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/
+  api/
+    greet/route.ts      → Health-check / hello endpoint
+    ingest/route.ts     → POST: clear DB, chunk markdown, bulk-insert
+  page.tsx              → Landing page (placeholder)
+  layout.tsx            → Root layout
+content/
+  operational-processes/ → 25 Umuzi Markdown docs
+lib/
+  chunker.ts            → Sentence-aware chunking with overlap
+  content-reader.ts     → Recursive Markdown file loader
+  db.ts                 → pg Pool, query helper, graceful shutdown
+  db-types.ts           → TypeScript interfaces for DB rows
+  index.ts              → Barrel re-exports
+  repositories/
+    slab-content.ts     → CRUD + vector search for slab_content
+    questions-asked.ts  → CRUD + analytics for questions_asked
+migrations/
+  001_initial_schema.sql → pgvector, tables, indexes
+scripts/
+  ingest.ts             → CLI trigger for /api/ingest
+```
 
-## Deploy on Vercel
+## Available Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command          | Description                           |
+| ---------------- | ------------------------------------- |
+| `npm run dev`    | Start Next.js in development mode     |
+| `npm run build`  | Production build                      |
+| `npm run start`  | Start the production server           |
+| `npm run lint`   | Run ESLint                            |
+| `npm run ingest` | Trigger content ingestion via the API |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Next Steps (Roadmap)
+
+- [ ] Integrate Google Gemini API for embedding generation and LLM answers
+- [ ] Build the RAG query pipeline (embed question → vector search → LLM answer with citations)
+- [ ] Create and connect a Slack App (slash commands and/or bot DMs)
+- [ ] Log every question to `questions_asked`
+- [ ] Set up a Render cron job for daily re-ingestion
+- [ ] Deploy to Render (staging → production)
+- [ ] Add Slab API integration to replace / augment local Markdown files
+- [ ] Support Google Drive documents as an additional content source
+- [ ] Enable conversational threads (multi-turn Q&A)
+- [ ] Add thumbs-up / thumbs-down feedback on answers
