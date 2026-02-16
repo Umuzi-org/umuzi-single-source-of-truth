@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadAllDocuments } from "../../../lib/content-reader";
 import { chunkAllDocuments } from "../../../lib/chunker";
+import { embedAllChunks } from "../../../lib/embeddings";
 import {
   bulkInsertSlabContent,
   clearAllSlabContent,
@@ -8,7 +9,7 @@ import {
 } from "../../../lib/repositories/slab-content";
 import type { CreateSlabContent } from "../../../lib/db-types";
 
-// POST /api/ingest — Reads markdown files, chunks them, and stores in DB.
+// POST /api/ingest — Reads markdown files, chunks them, embeds them, and stores everything (text + vector) in the database.
 // WARNING: Clears existing content first (full re-ingest).
 
 export async function POST(req: Request) {
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    // 1. Load markdown documents from content/
     const docs = loadAllDocuments();
 
     if (docs.length === 0) {
@@ -29,11 +31,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2. Split documents into overlapping chunks
     const chunks = chunkAllDocuments(docs);
 
-    const records: CreateSlabContent[] = chunks.map((chunk) => ({
+    // 3. Compute Gemini embeddings for every chunk
+    console.log(`Computing embeddings for ${chunks.length} chunks via Gemini…`);
+    const embeddedChunks = await embedAllChunks(chunks, (batch, total) => {
+      console.log(`  Embedding batch ${batch + 1}/${total}`);
+    });
+
+    // 4. Build database records with embeddings attached
+    const records: CreateSlabContent[] = embeddedChunks.map((chunk) => ({
       title: chunk.title,
       chunk_text: chunk.chunkText,
+      embedding_vector: chunk.embedding,
       slab_url: chunk.sourceFile,
     }));
 
@@ -51,9 +62,10 @@ export async function POST(req: Request) {
     const total = await countSlabContent();
 
     return NextResponse.json({
-      message: "Ingestion complete",
+      message: "Ingestion complete (with embeddings)",
       documentsFound: docs.length,
       chunksCreated: chunks.length,
+      embeddingsComputed: embeddedChunks.length,
       previousRecordsDeleted: deleted,
       recordsInserted: inserted,
       totalRecordsInDb: total,
