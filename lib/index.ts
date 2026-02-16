@@ -9,3 +9,9 @@ export { loadAllDocuments } from "./content-reader";
 export type { MarkdownDocument } from "./content-reader";
 export { chunkDocument, chunkAllDocuments } from "./chunker";
 export type { ContentChunk } from "./chunker";
+
+// Gemini AI (LLM + embeddings)
+export { genai, embedText, embedTexts, generateText } from "./gemini";
+export { EMBEDDING_MODEL, CHAT_MODEL } from "./gemini";
+export { embedAllChunks } from "./embeddings";
+export type { ChunkWithEmbedding } from "./embeddings";
