@@ -1,10 +1,6 @@
 name: Ingest Content
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "content/**"
   workflow_dispatch:
 
 jobs:
