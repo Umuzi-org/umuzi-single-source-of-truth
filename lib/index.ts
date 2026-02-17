@@ -15,3 +15,7 @@ export { genai, embedText, embedTexts, generateText } from "./gemini";
 export { EMBEDDING_MODEL, CHAT_MODEL } from "./gemini";
 export { embedAllChunks } from "./embeddings";
 export type { ChunkWithEmbedding } from "./embeddings";
+
+// RAG pipeline
+export { askQuestion } from "./rag";
+export type { RAGResult } from "./rag";
