@@ -24,7 +24,7 @@ async function processAndRespond(
     await fetch(responseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, response_type: "ephemeral" }),
+      body: JSON.stringify({ text, response_type: "in_channel" }),
     });
   } catch (error) {
     console.error("Error processing question in background:", error);
@@ -33,7 +33,7 @@ async function processAndRespond(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         text: "Sorry, something went wrong while processing your question. Please try again.",
-        response_type: "ephemeral",
+        response_type: "in_channel",
       }),
     }).catch(() => {});
   }
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       // Immediately ACK to Slack (< 3 s)
       return NextResponse.json({
         text: `🔍 Looking up: _"${question}"_ — hang tight…`,
-        response_type: "ephemeral",
+        response_type: "in_channel",
       });
     }
 
