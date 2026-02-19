@@ -9,6 +9,10 @@ import {
 } from "../../../lib/repositories/slab-content";
 import type { CreateSlabContent } from "../../../lib/db-types";
 
+// Base URL for source file links — points to the canonical GitHub location of each content file.
+const GITHUB_CONTENT_BASE =
+  "https://github.com/Umuzi-org/umuzi-single-source-of-truth/blob/main/content";
+
 // POST /api/ingest — Reads markdown files, chunks them, embeds them, and stores everything (text + vector) in the database.
 // WARNING: Clears existing content first (full re-ingest).
 
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
       title: chunk.title,
       chunk_text: chunk.chunkText,
       embedding_vector: chunk.embedding,
-      slab_url: chunk.sourceFile,
+      slab_url: `${GITHUB_CONTENT_BASE}/${chunk.sourceFile}`,
     }));
 
     // WARNING: Clears existing content first (full re-ingest).
