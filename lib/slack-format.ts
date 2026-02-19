@@ -17,26 +17,25 @@
  *     an italic span (`_ _`), mangling the rest of the line.
  *  2. Headings, bold, and italic are resolved in a single regex pass so that the
  *     `*text*` output from bold/heading conversion is never re-matched as italic.
- */
-export function mdToSlack(md: string): string {
+ */ export function mdToSlack(md: string): string {
   return (
     md
-      // 1. Unordered list bullets FIRST — `*` and `-` markers become •
-      //    so they cannot be mis-read as bold/italic delimiters below.
+      // 1. Bullets first
       .replace(/^[ \t]*[-*]\s+/gm, "• ")
-      // 2. Headings, bold, italic — single pass prevents double-conversion.
-      //    Order of alternatives: headings → bold (double *) → italic (single *).
-      .replace(
-        /^#{1,6}\s+(.+)$|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/gm,
-        (_, heading, bold, italic) => {
-          if (heading !== undefined) return `*${heading}*`;
-          if (bold !== undefined) return `*${bold}*`;
-          return `_${italic}_`;
-        },
-      )
-      // 3. Strikethrough: ~~text~~ → ~text~
+
+      // 2. Headings
+      .replace(/^#{1,6}\s+(.+)$/gm, "*$1*")
+
+      // 3. Bold (double asterisk only)
+      .replace(/\*\*([^*\n]+)\*\*/g, "*$1*")
+
+      // 4. Italic (single asterisk but NOT bold)
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1_$2_")
+
+      // 5. Strikethrough
       .replace(/~~([^~\n]+)~~/g, "~$1~")
-      // 4. Links: [text](url) → <url|text>
+
+      // 6. Links
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "<$2|$1>")
   );
 }
