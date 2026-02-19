@@ -22,7 +22,7 @@ An AI-powered internal knowledge assistant for the Umuzi organisation. It ingest
 | LLM answer generation with citations         | ✅ Working (RAG pipeline in `lib/rag.ts` + `POST /api/ask`) |
 | Question logging (`questions_asked` table)   | ✅ Working (logged on every `/api/ask` request)             |
 | Ask API route (`POST /api/ask`)              | ✅ Working (question → embed → search → LLM answer)         |
-| Slack App integration (slash command / DM)   | 🔲 Not started                                              |
+| Slack App integration (slash command / DM)   | ✅ Working (Events API: @mention, DM; slash command `/ask`) |
 | Daily cron job (Render)                      | 🔲 Not started                                              |
 | Production deployment on Render              | 🔲 Not started                                              |
 
@@ -45,7 +45,6 @@ The core RAG pipeline is **fully functional** end-to-end:
 - **RAG query pipeline** is live — `POST /api/ask` accepts a question, embeds it, performs vector similarity search with a relevance threshold, builds an augmented prompt, and returns a Gemini-generated answer with source citations.
 - **Question logging** is active — every question submitted to `/api/ask` is recorded in the `questions_asked` table with a user ID and timestamp.
 - **25 operational Markdown documents** are already in `content/operational-processes/`.
-- **Remaining work**: Slack App integration, daily cron job, and production deployment on Render.
 
 ## Tech Stack
 
@@ -189,7 +188,7 @@ scripts/
 - [x] Integrate Google Gemini API for embedding generation and LLM answers
 - [x] Build the RAG query pipeline (embed question → vector search → LLM answer with citations)
 - [x] Log every question to `questions_asked`
-- [ ] Create and connect a Slack App (slash commands and/or bot DMs)
+- [x] Create and connect a Slack App (slash commands and/or bot DMs)
 - [ ] Set up a Render cron job for daily re-ingestion
 - [ ] Deploy to Render (staging → production)
 - [ ] Add Slab API integration to replace / augment local Markdown files
