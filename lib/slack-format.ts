@@ -10,13 +10,22 @@
  *  - Strikethrough: ~~text~~ → ~text~
  *  - Code spans / blocks: kept as-is (Slack supports backtick syntax natively)
  *
- * Headings, bold, and italic are resolved in a single regex pass to avoid
- * the conversion sequence turning newly-created *bold* markers into italics.
+ * Processing order matters:
+ *  1. Bullets are converted FIRST so that `*` list markers (e.g. `* **Heading**`)
+ *     are replaced with `•` before any `*` is interpreted as bold or italic.
+ *     Without this, the leading `* ` in `* **text**` is incorrectly matched as
+ *     an italic span (`_ _`), mangling the rest of the line.
+ *  2. Headings, bold, and italic are resolved in a single regex pass so that the
+ *     `*text*` output from bold/heading conversion is never re-matched as italic.
  */
 export function mdToSlack(md: string): string {
   return (
     md
-      // Headings (# … ######), bold (**), and italic (*) — one pass to prevent conflicts
+      // 1. Unordered list bullets FIRST — `*` and `-` markers become •
+      //    so they cannot be mis-read as bold/italic delimiters below.
+      .replace(/^[ \t]*[-*]\s+/gm, "• ")
+      // 2. Headings, bold, italic — single pass prevents double-conversion.
+      //    Order of alternatives: headings → bold (double *) → italic (single *).
       .replace(
         /^#{1,6}\s+(.+)$|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/gm,
         (_, heading, bold, italic) => {
@@ -25,12 +34,10 @@ export function mdToSlack(md: string): string {
           return `_${italic}_`;
         },
       )
-      // Strikethrough: ~~text~~ → ~text~
+      // 3. Strikethrough: ~~text~~ → ~text~
       .replace(/~~([^~\n]+)~~/g, "~$1~")
-      // Links: [text](url) → <url|text>
+      // 4. Links: [text](url) → <url|text>
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "<$2|$1>")
-      // Unordered list bullets (- or * at line start) → •
-      .replace(/^[ \t]*[-*]\s+/gm, "• ")
   );
 }
 
