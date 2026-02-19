@@ -19,3 +19,6 @@ export type { ChunkWithEmbedding } from "./embeddings";
 // RAG pipeline
 export { askQuestion } from "./rag";
 export type { RAGResult } from "./rag";
+
+// Slack message formatting
+export { mdToSlack, formatSources } from "./slack-format";
