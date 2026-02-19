@@ -97,8 +97,8 @@ export function chunkDocument(doc: MarkdownDocument): ContentChunk[] {
         if (overlapWords >= OVERLAP_WORDS) break;
       }
       i = i - backtrack;
-      // Safety: always move forward by at least one sentence
-      if (i <= chunks.length === false && backtrack >= chunkSentences.length) {
+      // Safety: if we'd back up to the same start position, force-advance by 1
+      if (backtrack >= chunkSentences.length) {
         i += 1;
       }
     }
