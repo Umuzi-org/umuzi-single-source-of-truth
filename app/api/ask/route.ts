@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { askQuestion } from "../../../lib/rag";
 import { insertQuestion } from "../../../lib/repositories/questions-asked";
+import { mdToSlack, formatSources } from "../../../lib/slack-format";
 
 // Background processing function to handle the RAG pipeline and respond to Slack asynchronously.
 async function processAndRespond(
@@ -13,13 +14,12 @@ async function processAndRespond(
 
     const { answer, sources } = await askQuestion(question);
 
-    const sourceList = sources
-      .map(
-        (s) => `• _${s.title}_ (relevance ${(s.similarity * 100).toFixed(0)}%)`,
-      )
-      .join("\n");
+    const sourceList = formatSources(sources);
 
-    const text = sourceList ? `${answer}\n\n*Sources:*\n${sourceList}` : answer;
+    const slackAnswer = mdToSlack(answer);
+    const text = sourceList
+      ? `${slackAnswer}\n\n*Sources:*\n${sourceList}`
+      : slackAnswer;
 
     await fetch(responseUrl, {
       method: "POST",

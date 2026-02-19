@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { askQuestion } from "../../../lib/rag";
 import { insertQuestion } from "../../../lib/repositories/questions-asked";
+import { mdToSlack, formatSources } from "../../../lib/slack-format";
 
 /** Strip the `<@BOTID>` mention prefix so we get a clean question. */
 function stripMention(text: string): string {
@@ -52,13 +53,12 @@ async function processAndReply(
     const { answer, sources } = await askQuestion(question);
 
     // 3. Format response with sources
-    const sourceList = sources
-      .map(
-        (s) => `• _${s.title}_ (relevance ${(s.similarity * 100).toFixed(0)}%)`,
-      )
-      .join("\n");
+    const sourceList = formatSources(sources);
 
-    const text = sourceList ? `${answer}\n\n*Sources:*\n${sourceList}` : answer;
+    const slackAnswer = mdToSlack(answer);
+    const text = sourceList
+      ? `${slackAnswer}\n\n*Sources:*\n${sourceList}`
+      : slackAnswer;
 
     // 4. Send to Slack (threaded when threadTs is available)
     await postSlackMessage(channel, text, threadTs);
