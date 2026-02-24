@@ -1,0 +1,24 @@
+name: Report most questions asked in the past month
+
+on:
+  schedule:
+    - cron: "0 0 28 * *" # Run on the 28th of every month at midnight
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate report
+        env:
+          HOST_URL: ${{ secrets.HOST_URL }}
+          REPORT_SECRET_CODE: ${{ secrets.REPORT_SECRET_CODE }}
+        run: |
+          curl -X POST "$HOST_URL/api/report" \
+            -H "Content-Type: application/json" \
+            -d '{"secretCode": "'"$REPORT_SECRET_CODE"'"}'
