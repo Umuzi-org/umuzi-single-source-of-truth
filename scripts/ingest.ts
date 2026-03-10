@@ -6,6 +6,9 @@
  *   INGEST_SECRET_CODE  – shared secret sent in the x-ingest-secret header
  */
 
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
 const HOST_URL = process.env.HOST_URL;
 const INGEST_SECRET_CODE = process.env.INGEST_SECRET_CODE;
 

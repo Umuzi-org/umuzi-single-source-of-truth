@@ -4,10 +4,10 @@
 // Generates the Prisma Client into lib/generated/prisma so it can be imported
 // throughout the codebase via ../lib/generated/prisma
 generator client {
-  provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
-}
+  provider      = "prisma-client-js"
+  output        = "../lib/generated/prisma"
 
+}
 // Connects to a PostgreSQL database using the DATABASE_URL environment variable.
 // Requires the pgvector extension to be installed on the database instance.
 datasource db {
