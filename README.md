@@ -16,7 +16,7 @@ An AI-powered internal knowledge assistant for the Umuzi organisation. It ingest
 | Markdown content fetch and storage               | ✅ Working (104 docs across 6 categories)                                   |
 | Content chunking (section-aware, overlapping)    | ✅ Working (splits on `##` headings, ~550-word target with 75-word overlap) |
 | PostgreSQL + pgvector schema                     | ✅ Migrated                                                                 |
-| Ingestion API route (`POST /api/ingest`)         | ✅ Working (secret-key secured, embeds + stores chunks)                     |
+| Ingestion API route (`POST /api/ingest-markdown`)| ✅ Working (secret-key secured, embeds + stores chunks)                     |
 | Google Gemini embedding generation               | ✅ Working (`gemini-embedding-001`, 768-dim vectors)                        |
 | Vector similarity search (RAG retrieval)         | ✅ Working (`searchByEmbedding` with cosine similarity, threshold 0.3)      |
 | Document expansion in RAG                        | ✅ Working (fetches all chunks from every matched document)                 |
