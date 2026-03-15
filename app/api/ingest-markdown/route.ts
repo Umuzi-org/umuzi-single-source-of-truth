@@ -13,7 +13,7 @@ import type { CreateSlabContent } from "../../../lib/db-types";
 const GITHUB_CONTENT_BASE =
   "https://github.com/Umuzi-org/umuzi-single-source-of-truth/blob/main/content";
 
-// POST /api/ingest — Reads markdown files, chunks them, embeds them, and stores everything (text + vector) in the database.
+// POST /api/ingest-markdown — Reads markdown files, chunks them, embeds them, and stores everything (text + vector) in the database.
 // WARNING: Clears existing content first (full re-ingest).
 
 export async function POST(req: Request) {
